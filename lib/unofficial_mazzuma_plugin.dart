@@ -2,19 +2,17 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 
-import 'model/custom_response.dart';
-
 class UnofficialMazzumaPlugin {
   Response response;
 
   
-sunuPay(String userNetwork, String userNumber, String recieverNetwork, String recieverNumber,double paymentAmount,String apiKey){
+sunuPay(String userNetwork, String userNumber, String recieverNetwork, String recieverNumber,double paymentAmount,String apiKey) async {
 
 String paymentOption; 
 if (userNetwork != "VODAFONE") {
   paymentOption = paymentOptionSunuPlug(userNetwork,recieverNetwork);
-  var response = processPayment(paymentAmount, userNetwork, recieverNumber, userNumber, paymentOption, apiKey);
-  return response.toString();
+  String response = await processPayment(paymentAmount, userNetwork, recieverNumber, userNumber, paymentOption, apiKey);
+  return response;
   } else{ return "Error: Use vicVodPay() instead"; }
 }
 
@@ -34,12 +32,12 @@ String paymentOptionSunuPlug(userNetwork,recieverNetwork){
 
 
 //Paying with Vodafone. Costumer must generate token from USSD. Dial *110#; Select Option 4 Select Option *Enter Vod Cash Pin *Check SMS
-vicVodPay(String userNumber, String recieverNetwork, String recieverNumber,double paymentAmount,String apiKey, String token){
+vicVodPay(String userNumber, String recieverNetwork, String recieverNumber,double paymentAmount,String apiKey, String token) async {
 String userNetwork = "VODAFONE";
 String paymentOption = paymentOptionVicPlug(recieverNetwork);
 
-var response = processPayment2(paymentAmount, userNetwork, recieverNumber, userNumber, paymentOption, apiKey,token);
-  return response.toString();
+String response = await processPayment2(paymentAmount, userNetwork, recieverNumber, userNumber, paymentOption, apiKey,token);
+  return response;
 }
 
 String paymentOptionVicPlug(recieverNetwork){
@@ -53,7 +51,7 @@ return paymentOption;
 
 
 
-  Future<CustomResponse> processPayment(
+  Future<String> processPayment(
       double price, ///The amount to be paid
       String network, ///This is the network of the mobile money account that would be making the payment (your customer)
       String recipientNumber, ///This is the mobile money account the payments shall end up in. (your account).
@@ -64,7 +62,7 @@ return paymentOption;
     BaseOptions options = BaseOptions(
       baseUrl: "https://client.teamcyst.com",
     );
-
+    
     Dio dio = new Dio(options);
 
     response = await dio.post("/api_call.php", data: {
@@ -75,13 +73,15 @@ return paymentOption;
       "option": option,
       "apikey": apiKey,
     });
+    String _response = response.data.toString();
 
-    CustomResponse customResponse = CustomResponse.fromMap(response.data); ///The response for a request contains the following information. response.data, response.headers, response.request, response.statusCode
-
-    return customResponse;
+     if(_response.contains("Successful")){ return "Success: ${response.data}";}
+     else if(_response.contains("Failed")){return  "Failed: ${response.data}";}
+     else if(response.data.toString().contains("Pending")){return "Pending: ${response.data}";}
+     else{return "Error occurred: ${response.data}";}
   }
 
-  Future<CustomResponse> processPayment2(
+  Future<String> processPayment2(
       double price, ///The amount to be paid
       String network, ///This is the network of the mobile money account that would be making the payment (your customer)
       String recipientNumber, ///This is the mobile money account the payments shall end up in. (your account).
@@ -106,9 +106,14 @@ return paymentOption;
       "token": token,
     });
 
-    CustomResponse customResponse = CustomResponse.fromMap(response.data); ///The response for a request contains the following information. response.data, response.headers, response.request, response.statusCode
+    String _response = response.data.toString();
 
-    return customResponse;
+     if(_response.contains("Successful")){ return "Success: ${response.data}";}
+     else if(_response.contains("Failed")){return  "Failed: ${response.data}";}
+     else if(response.data.toString().contains("Pending")){return "Pending: ${response.data}";}
+     else{return "Error occurred: ${response.data}";}
+  
+
   }
 
   ///This plugin can be used by importing and initialise it then provide the required parameters
